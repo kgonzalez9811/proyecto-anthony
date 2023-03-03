@@ -1,0 +1,89 @@
+.errorSpan, .errorSpanBig, .errorSpanForms {
+    color: red;
+    border-color: #ebccd1;
+    font-weight: bold;
+    z-index: 100;
+}
+
+.errorSpanForms {
+    position: relative;
+    margin-top: 1%;
+    margin-left: 3%;
+}
+
+.errorSpanForms {
+    font-size: 12px;
+}
+
+
+.ui-datepicker .ui-datepicker-title select{
+	color: #c00;
+}
+
+.addclass{
+	    background-color: transparent;
+    border: 1px solid #fff;
+    color: #fff;
+    height: 25px;
+    width: 90%;
+    margin-top: 7px;
+}
+
+.headermodalall{
+    background-color: #0C1320;
+    color: #fff;
+}
+
+
+.footermodalall{
+    background-color: #FF4454;
+    color: #0C1320;
+}
+
+
+
+.agranda-texto{
+    font-size: 40px;
+    color: #fff;
+    text-align: center;
+}
+
+
+.preciomodalall{
+    color: #fff;
+    padding: 2%;
+    width: 95%;
+    height: auto;
+    background-color: #dd042b;
+    font-weight: bold;
+    font-size: 12px;
+    margin: 0px 0px 14px 14px;
+    border-radius: 5px 5px 0 0;
+}
+
+.applymarginleft{
+    margin-left: 22px;
+}
+
+.hidden-element{
+    display: none !important;
+}
+
+.show-element{
+    display: block;
+}
+
+
+.textalign-justify{
+    text-align: justify;
+}
+
+
+
+.session-no-active{
+    display: none !important;
+}
+
+.session-active{
+    display: block;
+}

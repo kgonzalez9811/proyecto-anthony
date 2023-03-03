@@ -1,0 +1,75 @@
+function disabledSelect(element,tag,action){
+	$(tag+element).prop("disabled", action);
+}
+
+function str_replace(busca, repla, orig)
+{
+	str 	= new String(orig);
+
+	rExp	= "/"+busca+"/g";
+	rExp	= eval(rExp);
+	newS	= String(repla);
+
+	str = new String(str.replace(rExp, newS));
+
+	return str;
+}
+
+function activaUrl(getId){
+    enlace = $("#"+getId).attr("href");
+    window.location = enlace;
+}
+
+
+ /**
+ * Retorna el numero de elementos de un objeto
+ * @param obj
+ * @returns {Number}
+ */
+function objSize(obj) {
+    var count = 0;
+    //console.log('obj: ',obj);
+    if (typeof obj == "object") {
+        //console.log(Object.keys);
+        if (Object.keys) {
+            count = Object.keys(obj).length;
+        } else if (window._) {
+            count = _.keys(obj).length;
+        } else if (window.$) {
+            count = $.map(obj, function () {
+                return 1;
+            }).length;
+        } else {
+            for (var key in obj)
+                if (obj.hasOwnProperty(key))
+                    count++;
+        }
+
+    }
+
+    return count;
+}
+
+
+
+var quitaacentos = (function() {
+  var from = "ÃÀÁÄÂÈÉËÊÌÍÏÎÒÓÖÔÙÚÜÛãàáäâèéëêìíïîòóöôùúüûÑñÇç", 
+      to   = "AAAAAEEEEIIIIOOOOUUUUaaaaaeeeeiiiioooouuuunncc",
+      mapping = {};
+ 
+  for(var i = 0, j = from.length; i < j; i++ )
+      mapping[ from.charAt( i ) ] = to.charAt( i );
+ 
+  return function( str ) {
+      var ret = [];
+      for( var i = 0, j = str.length; i < j; i++ ) {
+          var c = str.charAt( i );
+          if( mapping.hasOwnProperty( str.charAt( i ) ) )
+              ret.push( mapping[ c ] );
+          else
+              ret.push( c );
+      }      
+      return ret.join( '' );
+  }
+ 
+})();

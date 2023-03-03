@@ -1,0 +1,55 @@
+/** Global Condition for maps */
+
+var LocationCenter = null, LocationCentertwo = null, infowindow = null, map = null, approxCircle = null, pinCircle = null;
+var marker = null, viewInfo = null, markertwo = null, sepstring = null, elementone = null,elementtwo = null;
+//var iconBase = 'http://maps.google.com/mapfiles/';
+//var iconBase = 'https://maps.google.com/mapfiles/kml/pal3/';
+var iconBase = 'https://www.travelshop.com.mx/wp-content/themes/travelshop/images/';
+//
+var iconBaseTwo = 'https://maps.google.com/mapfiles/kml/pal4/';
+var iconBaseAlter = 'https://google.com/mapfiles/ms/micons/';
+
+
+var recuperacion = null;
+
+/** Close condition for maps */
+
+var app = angular.module('ControllerMain', ["vcRecaptcha"]);
+
+//TODO: Agregar el Router para trabajar con WPAPI
+app.config(['$locationProvider','vcRecaptchaServiceProvider', function($locationProvider,vcRecaptchaServiceProvider) {
+	$locationProvider.html5Mode({
+		enabled: true,
+		requireBase: false
+	});
+	// required, please use your own key :)
+	//reCAPTCHAProvider.setPublicKey('6LfvIxAUAAAAAGkJ6GfPZiHm9TdAS9qvgqte44oP');
+   	// optional
+   	//reCAPTCHAProvider.setOptions({
+      // 	theme: 'custom',
+    	//custom_theme_widget: 'recaptcha_widget'
+   	//});
+	// vcRecaptchaServiceProvider.setSiteKey('6LfvIxAUAAAAAGkJ6GfPZiHm9TdAS9qvgqte44oP')
+ //  	vcRecaptchaServiceProvider.setTheme('dark')
+ //  	vcRecaptchaServiceProvider.setSize('normal')
+ //  	vcRecaptchaServiceProvider.setType('image')
+ //  	vcRecaptchaServiceProvider.setLang('Spanish')
+}]);
+
+
+app.run(function ($browser) {
+	$browser.baseHref = function () { return "/" };
+});
+
+
+var appPaquetes = angular.module('vistaResultadosAngular', ['angular-whenScrolled', 'ControllerMain', 'ngSanitize']);
+appPaquetes.config(['$locationProvider', function ($locationProvider) {
+    $locationProvider.html5Mode({
+        enabled: true,
+        requireBase: false
+    });
+}]);
+
+
+
+

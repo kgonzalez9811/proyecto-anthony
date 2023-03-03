@@ -1,0 +1,745 @@
+var tt = 0;
+
+(function(angular) {
+
+
+
+
+    app.controller('ControllerOnlyBranch', ['$scope', '$http', '$location', 'requestInfoBuildSelectDinamic', 'genericServices', '$timeout', 'sendDataFormAJ', function($scope, $http, $location, requestInfoBuildSelectDinamic, genericServices, $timeout, sendDataFormAJ) {
+
+
+        $scope.helpDataTop = "";
+        $scope.recuperacion = recuperacion;
+
+        $scope.triggerId = "";
+
+        $(".info-agencia").hide();
+
+        // http://www.refulz.com:8082/index.php#tab2?foo=789
+
+        // Property    Result
+        // ------------------------------------------
+        // host        www.refulz.com:8082
+        // hostname    www.refulz.com
+        // port        8082
+        // protocol    http:
+        // pathname    index.php
+        // href        http://www.refulz.com:8082/index.php#tab2
+        // hash        #tab2
+        // search      ?foo=789
+
+        var xm = $(location).attr('pathname').replace(/\//gi, '');
+
+        $scope.getDataAllAgencies = function(element) {
+            $('#modal-agencias').modal('show');
+            keyCoun = {
+                "key_state": element
+            };
+            sendDataGen = JSON.stringify(keyCoun);
+            sendDataFormAJ.sendDataAllAgencyByState('returnAllAgenciesBySate', sendDataGen, $scope);
+            $timeout(function() {
+
+                if ($scope.recuperacion[0].id != undefined) {
+                    var titere = $scope.getDataAgenciesForTop($scope.recuperacion[0].id);
+                    $timeout(function() {
+                        $scope.halcon = $scope.helpDataTop;
+
+                        if ($scope.halcon) {
+                            $('#modal-agencias').modal('hide');
+                        }
+                    }, 1500);
+                }
+                return $scope.recuperacion;
+
+            }, 3000);
+
+        }
+
+        $scope.newInitialize = function(lat, lng, comando, comando2) {
+            LocationCenter = new google.maps.LatLng(lat, lng);
+            var myOptions = {
+                zoom: ((comando && !comando2) || (!comando && comando2)) ? 12 : 10,
+                center: LocationCenter,
+                mapTypeId: google.maps.MapTypeId.ROADMAP
+            }
+            map = new google.maps.Map(document.getElementById("map"), myOptions);
+            infowindow = new google.maps.InfoWindow();
+
+            marker = new google.maps.Marker({
+                position: LocationCenter,
+                map: map,
+                animation: google.maps.Animation.BOUNCE,
+                //icon: iconBase + "icon48.png"
+                icon: iconBase + "ico-miubucacion.png"
+            });
+
+            google.maps.event.addListener(marker, 'click', (function(marker, i) {
+                return function() {
+                    infowindow.setContent('<div class="tooltip-info"><h3>Ubicacion Actual</h3></div>');
+                    infowindow.open(map, marker);
+                }
+            })(marker, 0));
+
+            marker.addListener('click', $scope.toggleBounce());
+
+            $scope.getLocationByCoorDev(lat, lng);
+
+
+            var xx = 0;
+            var stam;
+            var serio = 1;
+
+            $timeout(function() {
+                for (var key in $scope.recuperacion) {
+                    let value = $scope.recuperacion[key];
+                    if (xx < 2) {
+                        stam = iconBase + "ico-laagencia.png";
+
+                    } else {
+                        stam = iconBase + "ico-laagencia.png";
+                    }
+                    marker = new google.maps.Marker({
+                        position: new google.maps.LatLng(value.latitud, value.longitud),
+                        map: map,
+                        icon: stam,
+                    });
+
+
+
+                    google.maps.event.addListener(marker, 'click', (function(marker, i) {
+                        return function() {
+                            cadena = '<div class="tooltip-info"><h1>' + value.nameagency + '</h1>';
+                            cadena += '<div><i class="fa fa-map-marker" aria-hidden="true"></i><p>' + value.addresscontact + '</p></div>';
+                            cadena += (value.telephone != "") ? '<div><i class="fa fa-phone" aria-hidden="true"></i><p>' + value.telephone + '</p></div>' : '';
+                            cadena += '</div>';
+                            infowindow.setContent(cadena);
+                            infowindow.open(map, marker);
+                            $("#get_ref_logo").attr("src", "");
+                            $("#get_ref_logo").attr("src", "/" + value.logoagencia);
+
+                            $("#get_ref_title").html(value.nameagency);
+                            $("#get_ref_direccion").html((value.addresscontact != undefined && value.addresscontact != "") ? '<i class="fa fa-map-marker" aria-hidden="true"></i>' + value.addresscontact : '');
+                            $("#get_ref_telefono").html((value.telephone != undefined && value.telephone != "") ? '<i class="fa fa-phone" aria-hidden="true"></i>' + value.telephone : '');
+                            $("#get_ref_email").html((value.emailcontact != undefined && value.emailcontact != "") ? '<i class="fa fa-envelope" aria-hidden="true"></i>' + value.emailcontact : '');
+
+                            $(".info-agencia").show();
+                        }
+                    })(marker, serio));
+                    xx++;
+                    serio++;
+
+                }
+            }, 5000);
+        }
+
+
+        $scope.toggleBounce = function() {
+            (marker.getAnimation() !== null) ? marker.setAnimation(null): marker.setAnimation(google.maps.Animation.DROP);
+        }
+
+        $scope.execGeoLocation = function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    elementone = position.coords.latitude;
+                    elementtwo = position.coords.longitude;
+                    // console.log(elementone);
+                    // console.log(elementtwo);
+                    $scope.newInitialize(elementone, elementtwo);
+                }, function(error) {
+                    //console.log("no entro");
+                });
+            } else {
+                //console.log("No acepto");
+                newInitialize(24.008784, -102.785198, false);
+            }
+            //
+            //
+            //$scope.newInitialize('19.406108','-99.170263',true);
+            //$scope.newInitialize('19.407817', '-99.116557', true); // para df
+            // $scope.newInitialize('19.286897', '-99.643410', true); // para edo mex
+
+        };
+
+
+        $scope.getLocationByCoorDev = function(latGet, lngGet) {
+            $.ajaxSetup({
+                async: false
+            });
+            $.getJSON("https://maps.googleapis.com/maps/api/geocode/json?latlng=" + latGet + "," + lngGet + "&sensor=false", function(dataValue) {
+                // console.log(dataValue.results[0]);
+                // console.log(dataValue.results[0].address_components[5].long_name);
+                // console.log(dataValue.results[0].address_components[6].long_name);
+                // Retorno de coordenadas para instancias;
+                //
+                if (dataValue.results[0].address_components[6].long_name == "Estado de México") {
+                    $scope.getDataAllAgencies(dataValue.results[0].address_components[6].long_name);
+                } else {
+                    $scope.getDataAllAgencies(dataValue.results[0].address_components[5].long_name);
+                }
+
+            });
+            return viewInfo;
+        }
+
+        // Ejecuto validacion de geolocalizacion
+        if (xm == "sucursales-a-tu-alcance") {
+            //$scope.execGeoLocation();
+            //$scope.getLocationByCoorDev('19.406108', '-99.170263');
+            $scope.execGeoLocation();
+        }
+
+        $scope.mirate = function() {
+            console.log("Alto ahi");
+        }
+
+        $scope.getDataAgenciesForTop = function(element) {
+            keyCoun = {
+                "key_state": element
+            };
+            sendDataGen = JSON.stringify(keyCoun);
+            sendDataFormAJ.sendStateByKeyForTop('returnStatesByKeyByUseTop', sendDataGen, $scope);
+            //return $scope.recuperacion;
+        }
+
+
+        $scope.getDataAgencies = function(element) {
+            keyCoun = {
+                "key_state": element
+            };
+            sendDataGen = JSON.stringify(keyCoun);
+            sendDataFormAJ.sendStateByKey('returnStatesByKey', sendDataGen);
+
+            if (element != undefined) {
+                var titere = $scope.getDataAgenciesForTop(element);
+                $timeout(function() {
+                    $scope.halcon = $scope.helpDataTop;
+                }, 1500);
+            }
+            //return $scope.recuperacion;
+        }
+
+
+
+        $scope.reloadMapAng = function(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) {
+            $scope.loadMapOnClick(arg7, arg8, arg2, arg3, arg4, arg5, arg6, '');
+        }
+
+
+        // $scope.reloadMapAng = function(arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8){
+        //     console.log("entrada");
+        //     $scope.loadMapOnClick(arg7, arg8,arg2,arg3,arg4,arg5,arg6,'');
+        // }
+
+        $scope.loadMapOnClick = function(lat, lng, nameagency, address, telephone, email, logo, horary) {
+            LocationCenter = new google.maps.LatLng(lat, lng);
+            var myOptions = {
+                zoom: 14,
+                center: LocationCenter,
+                mapTypeId: google.maps.MapTypeId.ROADMAP
+            }
+            map = new google.maps.Map(document.getElementById("map"), myOptions);
+            infowindow = new google.maps.InfoWindow();
+
+            marker = new google.maps.Marker({
+                position: LocationCenter,
+                map: map,
+                animation: google.maps.Animation.BOUNCE,
+                icon: iconBase + "ico-laagencia.png"
+            });
+
+            google.maps.event.addListener(marker, 'click', (function(marker, i) {
+                return function() {
+                    cadena = '<div class="tooltip-info"><h1>' + nameagency + '</h1>';
+                    cadena += '<div><i class="fa fa-map-marker" aria-hidden="true"></i><p>' + address + '</p></div>';
+                    cadena += (telephone != "") ? '<div><i class="fa fa-phone" aria-hidden="true"></i><p>' + telephone + '</p></div>' : '';
+                    cadena += '</div>';
+                    infowindow.setContent(cadena);
+                    infowindow.open(map, marker);
+                }
+            })(marker, 0));
+
+            $("#get_ref_logo").attr("src", "");
+            $("#get_ref_logo").attr("src", "/" + logo);
+
+            $("#get_ref_title").html(nameagency);
+            $("#get_ref_direccion").html((address != undefined && address != "") ? '<i class="fa fa-map-marker" aria-hidden="true"></i>' + address : '');
+            $("#get_ref_telefono").html((telephone != undefined && telephone != "") ? '<i class="fa fa-phone" aria-hidden="true"></i>' + telephone : '');
+            $("#get_ref_email").html((email != undefined && email != "") ? '<i class="fa fa-envelope" aria-hidden="true"></i>' + email : '');
+            $("#get_ref_horario").html((horary != undefined && horary != "") ? '<i class="fa fa-clock-o" aria-hidden="true"></i>' + horary : '');
+            $(".info-agencia").show();
+        };
+
+
+
+    }]);
+
+
+    app.controller('ControllerViewPackage', ['$scope', '$http', '$location', 'requestInfoBuildSelectDinamic', 'genericServices', '$timeout', 'sendDataFormAJ', 'vcRecaptchaService', function($scope, $http, $location, requestInfoBuildSelectDinamic, genericServices, $timeout, sendDataFormAJ, vcRecaptchaService) {
+
+
+        $('#loading').hide();
+        $scope.formData = {};
+        // Expresiones regulares
+        $scope.soloLetras = /^([a-zA-Z ñáéíóú\s]){3,}$/;
+        $scope.correovalido = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.([a-zA-Z]{2,4})+$/;
+        $scope.dieznumeros = /^([0-9\b]){10,10}$/;
+        $scope.validarfc = /^[a-zA-Z]{3,4}(\d{6})((\D|\d){3})?$/;
+        // Muestro los continentes para el buscador para el menu
+        $timeout(function() {
+            //Saco los continentes o regiones
+            var servicio_regiones = dir_jason_main + 'get_regiones_all/';
+            $http.get(servicio_regiones).success(function(data) {
+                $scope.regiones_completas = data.regiones;
+            });
+
+        }, 15);
+
+        $scope.formData.keypackage = ($location.search().keyProgram) ? $location.search().keyProgram : "";
+        $scope.formData.namepackage = ($location.search().nameProgram) ? $location.search().nameProgram : "";
+
+
+        $scope.periodosduracion = genericServices.periodDuration();
+
+        $scope.changeValueDataFormFilterArchive = function(element) {
+
+            //Saco los paises
+            returncountries = "";
+            var servicio_paises = dir_jason_main + 'get_paises_by_id/' + element;
+            //console.log(servicio_paises);
+            $http.get(servicio_paises).success(function(data) {
+                $timeout(function() {
+                    returncountries = data.paises;
+                    disabledSelect('paises_form', '#', false);
+                }, 100);
+            });
+            $('#loading').show();
+            $timeout(function() {
+                $scope.formData.paises_form = "";
+                $scope.setDropDown('#paises_form', returncountries, 'paises_form', 'Selecciona un País');
+            }, 2000);
+        }
+
+
+
+
+
+        $scope.setDropDown = function(id_select, obj_valores, scope_valor, mensaje_ninguno) {
+            var valores = obj_valores;
+            var topicSelect = $(id_select);
+            topicSelect.multiselect('destroy');
+            //var arrayLlenadoOpciones = new Array();
+            topicSelect[0].length = 0;
+            //console.log(valores);
+            if (valores !== undefined && valores.length > 0) {
+                $('#loading').hide();
+                $.each(valores, function(index, value) {
+                    topicSelect[0].add(new Option(value.paisnombre, value.id));
+                });
+
+                $(id_select).multiselect({
+                    buttonWidth: '180px',
+                    includeSelectAllOption: true,
+                    maxHeight: 300,
+                    selectAllText: 'Selecionar todos',
+                    buttonText: function(options, select) {
+                        return 'Elige un pais';
+                    },
+                });
+
+            } else {
+                $('#loading').hide();
+                //console.log('ENTRO AL ELSE');
+                $(id_select).multiselect({
+                    buttonWidth: '180px',
+                    maxHeight: 300,
+                    includeSelectAllOption: true,
+                    selectAllText: 'Selecionar todos',
+                    buttonText: function(options, select) {
+                        return 'Elige una opcion';
+                    },
+                });
+
+
+
+            }
+
+        };
+
+        $scope.searchDataFormMain = function(formData) {
+
+            $scope.submitted = true;
+
+            $scope.checkboxselected = function(object) {
+                return object;
+            }
+
+            if (formData.$invalid) {
+                console.log("error");
+                return;
+            } else {
+                $("#yesyesform").hide();
+                $("#message").html("<h2>Procesando <i class='fa fa-spinner fa-pulse'></i></h2>");
+                console.log("aceptado");
+            }
+
+
+            if ($scope.formData.regiones_form == undefined || $scope.formData.regiones_form == null) {
+                return false;
+            } else {
+
+                var paises_form = ($scope.formData.paises_form == undefined || $scope.formData.paises_form == null) ? '' : $scope.formData.paises_form;
+                var dias_form = ($scope.formData.dias_form == undefined || $scope.formData.dias_form == null) ? '' : $scope.formData.dias_form;
+                var categoria_form = ($scope.formData.categoria_form == undefined || $scope.formData.categoria_form == null) ? '' : $scope.formData.categoria_form;
+                var newURL = wpSiteOts + "/paquetes/" +
+                    "?categorias_get=" + $scope.formData.categoria_form +
+                    "&regiones_get=" + $scope.formData.regiones_form +
+                    "&paises_get=" + paises_form +
+                    "&dias_get=" + dias_form;
+                window.location.href = newURL;
+                //console.log(newURL);
+            }
+
+        };
+
+        $scope.response = null;
+        $scope.widgetId = null;
+
+        $scope.model = {
+            //key: '6LfvIxAUAAAAAGkJ6GfPZiHm9TdAS9qvgqte44oP'
+            key: '6LcxmKgUAAAAAPsnBBT9ecU1iycOIGbJ6GfqITZL'
+        };
+
+
+        $(".message").hide();
+
+
+        $scope.setResponse = function(response) {
+            console.info('Response available');
+            $scope.response = response;
+        };
+
+        $scope.setWidgetId = function(widgetId) {
+            console.info('Created widget ID: %s', widgetId);
+            $scope.widgetId = widgetId;
+        };
+
+        $scope.cbExpiration = function() {
+            console.info('Captcha expired. Resetting response object');
+            vcRecaptchaService.reload($scope.widgetId);
+            $scope.response = null;
+        };
+
+
+        $scope.sendDataFormPackage = function(formData) {
+            $scope.submitted = true;
+            //console.log('sending the captcha response to the server', $scope.response);
+            if (formData.$invalid) {
+                console.log("invalid");
+                $scope.showdialog = true;
+                $scope.showdialogcontact = true;
+                vcRecaptchaService.reload($scope.widgetId);
+                return;
+            } else {
+                console.log("valid");
+                $scope.showdialog = false;
+                $scope.showdialogcontact = false;
+                $("#yesyesform").hide();
+                $("#message").html("<h2>Procesando <i class='fa fa-spinner fa-pulse'></i></h2>");
+                console.log("aceptado");
+                $scope.validandoenvio = true;
+                $(".message").show();
+            }
+
+            var formdata = {
+                "namecontact": ($scope.formData.namecontact != '' && $scope.formData.namecontact != undefined) ? $scope.formData.namecontact : '',
+                "nameagency": ($scope.formData.nameagency != '' && $scope.formData.nameagency != undefined) ? $scope.formData.nameagency : '',
+                "emailcontact": ($scope.formData.emailcontact != '' && $scope.formData.emailcontact != undefined) ? $scope.formData.emailcontact : '',
+                "numpaxcontact": ($scope.formData.numpaxcontact != '' && $scope.formData.numpaxcontact != undefined) ? $scope.formData.numpaxcontact : '',
+                "messagecontact": ($scope.formData.messagecontact != '' && $scope.formData.messagecontact != undefined) ? $scope.formData.messagecontact : '',
+                "keypackage": ($scope.formData.keypackage != '' && $scope.formData.keypackage != undefined) ? $scope.formData.keypackage : '',
+                "namepackage": ($scope.formData.namepackage != '' && $scope.formData.namepackage != undefined) ? $scope.formData.namepackage : '',
+                "datetravel": ($scope.formData.datetravel != '' && $scope.formData.datetravel != undefined) ? $scope.formData.datetravel : '',
+                "typeentry": ($scope.formData.typeentry != '' && $scope.formData.typeentry != undefined) ? $scope.formData.typeentry : '',
+                "rfccontact": ($scope.formData.rfccontact != '' && $scope.formData.rfccontact != undefined) ? $scope.formData.rfccontact : '',
+                "addresscontact": ($scope.formData.addresscontact != '' && $scope.formData.addresscontact != undefined) ? $scope.formData.addresscontact : '',
+                "issuecontact": ($scope.formData.issuecontact != '' && $scope.formData.issuecontact != undefined) ? $scope.formData.issuecontact : '',
+                "telephoneaddcontact": ($scope.formData.telephoneaddcontact != '' && $scope.formData.telephoneaddcontact != undefined) ? $scope.formData.telephoneaddcontact : '',
+                "telephonecontact": ($scope.formData.telephonecontact != '' && $scope.formData.telephonecontact != undefined) ? $scope.formData.telephonecontact : '',
+                "statecontact": ($scope.formData.statecontact != '' && $scope.formData.statecontact != undefined) ? $scope.formData.statecontact : '',
+                "actionExecute": "Insert"
+            };
+
+            console.log(JSON.stringify(formdata));
+
+            var aceptaarchivo = ($scope.formData.uploaddoc) ? $scope.formData.uploaddoc : "";
+            var sendData = JSON.stringify(formdata);
+            var subida = ($scope.formData.typeentry == 4) ? true : false;
+            sendDataFormAJ.sendRequestFormExtern(aceptaarchivo, 'setRequestDataFE', sendData, "modal-registro", "modal-registro-existente", true, subida, 'toque_final', true, 'toque_final_existente');
+        };
+
+
+
+
+        $scope.sendDataLoginAdmin = function(formData) {
+            $scope.submitted = true;
+
+            if (formData.$invalid) {
+                return;
+            } else {
+                //$("#yesyesform").hide();
+                //$("#message").html("<h2>Procesando <i class='fa fa-spinner fa-pulse'></i></h2>");
+                console.log("aceptado");
+            }
+
+            var formdata = {
+                "emailcontact": ($scope.formData.emailcontact != '' && $scope.formData.emailcontact != undefined) ? $scope.formData.emailcontact : '',
+                "passcontact": ($scope.formData.passcontact != '' && $scope.formData.passcontact != undefined) ? $scope.formData.passcontact : '',
+                "typedis": 1
+            };
+            var sendData = JSON.stringify(formdata);
+
+            sendDataFormAJ.sendRequestDataControlLoginAgenciesExtern('setRequestDataLoginAgencies', sendData, "muestra-error", false);
+        }
+
+
+        $scope.sendDataFormInsertVideo = function(formData) {
+            $scope.submitted = true;
+
+            if (formData.$invalid) {
+                return;
+            } else {
+                $("#yesyesform").hide();
+                $("#message").html("<h2>Procesando <i class='fa fa-spinner fa-pulse'></i></h2>");
+                console.log("aceptado");
+            }
+
+            keyCoun = {
+                "completename": $scope.formData.namecontact,
+                "email": $scope.formData.emailcontact,
+                "agencia": $scope.formData.agencycontact
+            };
+            sendDataGen = JSON.stringify(keyCoun);
+            sendDataFormAJ.sendInfoVideoAulaCuarenta('setRequestDataVideoAula40', sendDataGen);
+        };
+
+
+        $scope.sendDataFormLogin = function(formData) {
+            $scope.submitted = true;
+
+            if (formData.$invalid) {
+                return;
+            } else {
+                //$("#yesyesform").hide();
+                //$("#message").html("<h2>Procesando <i class='fa fa-spinner fa-pulse'></i></h2>");
+                console.log("aceptado");
+            }
+
+            var formdata = {
+                "emailcontact": ($scope.formData.emailcontact != '' && $scope.formData.emailcontact != undefined) ? $scope.formData.emailcontact : '',
+                "passcontact": ($scope.formData.passcontact != '' && $scope.formData.passcontact != undefined) ? $scope.formData.passcontact : '',
+
+            };
+
+            var sendData = JSON.stringify(formdata);
+
+            sendDataFormAJ.sendRequestDataControlLoginExtern('setRequestDataLogin', sendData, "muestra-error", false);
+        };
+
+        $scope.sendDataFormLogout = function() {
+            var sendData = "";
+            sendDataFormAJ.sendRequestDataControlLoginExtern('setRequestDataLogout', sendData, "muestra-error", true);
+        };
+
+
+        $scope.openModalSuccess = function(keyman, ref) {
+            console.log("entrada");
+            $scope.formData.key_package = keyman;
+            $('#' + ref).modal('show');
+        };
+
+        $scope.openModalSuccessEmail = function(valueKeyDoc, ref) {
+            $('#' + ref).modal('show');
+            $scope.formData.valueKeyDoc = valueKeyDoc;
+        }
+
+
+        $scope.changeValueData = function(element) {
+            keyCoun = {
+                "key_type_category": element,
+                "key_package": $scope.formData.key_package
+            };
+            sendDataGen = JSON.stringify(keyCoun);
+            sendDataFormAJ.sendRateByKey('returnRatesByKey', sendDataGen, 'type_rate_choose', 'suplement_rate_choose');
+        }
+
+        $scope.gatherInfo = function($event, keyTag, hrefTag, nameDoc, nameUser, idUser, sectionId) {
+            $event.preventDefault();
+            $event.stopPropagation();
+            setDataGen = {
+                "section_id": sectionId,
+                "tag_href": hrefTag,
+                "name_doc": nameDoc,
+                "name_user_click": nameUser,
+                "id_user_click": idUser,
+                "actionExecute": "Insert"
+            };
+            sendDataGen = JSON.stringify(setDataGen);
+            console.log(sendDataGen);
+            var buildHref = (sectionId == 1 || sectionId == 4) ? true : false;
+            sendDataFormAJ.sendGatherClicks('setRequestDataClickCount', sendDataGen, hrefTag, buildHref);
+
+        }
+
+
+        $scope.sendDataFormSendEmailDinamic = function(formData) {
+            $scope.submitted = true;
+
+            if (formData.$invalid) {
+                console.log("error");
+                return;
+            } else {
+                $("#michhide").hide();
+                setDataGen = {
+                    "doc": $scope.formData.valueKeyDoc,
+                    "email": $scope.formData.emailcontact,
+                    "email_remitente": $scope.formData.emailcontact_remitente,
+                    "message": $scope.formData.messagecontact
+                };
+                sendDataGen = JSON.stringify(setDataGen);
+                console.log(sendDataGen);
+                sendDataFormAJ.sendEmailForDocData('setRequestSendEmailDoc', sendDataGen, 'envio_email');
+            }
+        }
+
+
+
+
+
+        $scope.sendDataFormBuildQuotation = function(formData) {
+            $scope.submitted = true;
+
+            if (formData.$invalid) {
+                console.log("error");
+                return;
+            } else {
+                //$("#yesyesform").hide();
+                //$("#message").html("<h2>Procesando <i class='fa fa-spinner fa-pulse'></i></h2>");
+                //console.log("aceptado");
+                //
+                // keyid=5637&get_category=1&type_rate=Terrestre&type_room=2
+                // &date_exit=2016-08-31&number_pax=2&name_pax=Edwin%20Michael%20Vallejo%20Torres
+                // &flight_cost=40&aditional_cost=60
+                var sendInfo = "keyid=" + $scope.formData.key_package;
+                sendInfo += "&get_category=" + $scope.formData.category_choose;
+                sendInfo += "&type_rate=" + $scope.formData.type_rate_choose;
+                sendInfo += "&type_room=" + $scope.formData.type_room_choose;
+                sendInfo += "&date_exit=" + $scope.formData.dateexit;
+                sendInfo += "&number_pax=" + $scope.formData.numpaxquotation;
+                sendInfo += "&name_pax=" + $scope.formData.namepassleader;
+                sendInfo += "&flight_cost=" + $scope.formData.cost_flight;
+                sendInfo += "&aditional_cost=" + $scope.formData.cost_aditional
+                sendInfo += "&condition_general=" + $scope.formData.conditiongeneralquotation
+                sendInfo += "&ticket_travel=" + $scope.formData.tickettravelquotation;
+
+                //window.location.href = wpSiteOts + "/cotizacion-personalizada/?" + sendInfo;
+                window.open(wpSiteOts + "/cotizacion-personalizada/?" + sendInfo, "_blank");
+            }
+        }
+
+        $scope.sendDataFormBuildQuotationSimple = function(formData) {
+            $scope.submitted = true;
+
+            if (formData.$invalid) {
+                console.log("error");
+                return;
+            } else {
+                //$("#yesyesform").hide();
+                //$("#message").html("<h2>Procesando <i class='fa fa-spinner fa-pulse'></i></h2>");
+                //console.log("aceptado");
+                //
+                // keyid=5637&get_category=1&type_rate=Terrestre&type_room=2
+                // &date_exit=2016-08-31&number_pax=2&name_pax=Edwin%20Michael%20Vallejo%20Torres
+                // &flight_cost=40&aditional_cost=60
+                var sendInfo = "keyid=" + $scope.formData.key_package;
+                sendInfo += "&date_exit=" + $scope.formData.dateexit;
+                sendInfo += "&number_pax=" + $scope.formData.numpaxquotation;
+                sendInfo += "&name_pax=" + $scope.formData.namepassleader;
+
+                //window.location.href = wpSiteOts + "/cotizacion-personalizada-simple/?" + sendInfo;
+                window.open(wpSiteOts + "/cotizacion-personalizada-simple/?" + sendInfo, "_blank");
+            }
+        }
+
+
+
+    }]);
+
+
+
+
+    app.directive('ngUpdateHidden', function() {
+        return {
+            restrict: 'AE', //attribute or element
+            scope: {},
+            replace: true,
+            require: 'ngModel',
+            link: function($scope, elem, attr, ngModel) {
+                $scope.$watch(ngModel, function(nv) {
+                    elem.val(nv);
+                });
+                elem.change(function() { //bind the change event to hidden input
+                    $scope.$apply(function() {
+                        ngModel.$setViewValue(elem.val());
+                    });
+                });
+            }
+        };
+    })
+
+    app.service('requestInfoBuildSelectDinamic', function($rootScope, $window, $http, sendDataFormAJ) {
+
+        $window.rootScopes = $window.rootScopes || [];
+        $window.rootScopes.push($rootScope);
+
+        if (!!$window.sharedService) {
+            return $window.sharedService;
+        }
+
+        $window.sharedService = {
+            changeValueDataFormFilter: function(action, fieldasign, valuefield, fieldcompare, fieldord, methodord) {
+                armyDestroy = {
+                    "clausevalue": valuefield,
+                    "clausefd": fieldcompare,
+                    "ordfd": fieldord,
+                    "methodord": methodord
+                };
+                var encodeStringJson = JSON.stringify(armyDestroy);
+                sendDataFormAJ.sendCountriesByContinentKey(action, encodeStringJson, fieldasign);
+            },
+            requestValueCities: verificalo
+        }
+        return $window.sharedService;
+    });
+
+
+    function verificalo(data, scope) {
+        if (data.length > 4) {
+            var comandouno = new Array();
+            var comandodos = new Array();
+            for (i = 0; i < data.length; i++) {
+                if (i <= 3) {
+                    comandouno.push(data[i].name);
+                } else {
+                    comandodos.push(data[i].name);
+                }
+
+            }
+            scope.initviewcities = comandouno.join();
+            scope.secondviewcities = comandodos.join();
+
+            scope.muestramas = true;
+        }
+    }
+
+
+})(angular);

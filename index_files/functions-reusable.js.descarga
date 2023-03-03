@@ -1,0 +1,1210 @@
+/*Llamadas WS*/
+app.service('getchallengeMaster', function($http){
+    delete $http.defaults.headers.common['X-Requested-With'];
+    this.getData = function(callbackFunc) {
+        $http({
+            method: 'GET',
+            url: 'http://crm.mundojoven.com:8080/webservice.php',
+            params: {'operation':'getchallenge', 'username':'cmsuser'},
+        }).success(function(data){
+            callbackFunc(data);
+        }).error(function(){
+            //console.log("error al comunicarse al servicio");
+            window.location.href=errorpage;
+        });
+    }
+});
+
+
+/*Llamadas WS*/
+app.service('sendMailProccess', function($http){
+    delete $http.defaults.headers.common['X-Requested-With'];
+	this.sayHello = function(baseDir,getParams,getUrlDir,getEmailSend,idMessageService){
+		jQuery.post( baseDir, getParams, function(data){
+			if(data.success)
+			{
+				$http({
+					method: 'GET',
+					url: 'http://sofia.mundojoven.com:8090/ssbWsEp/rest/restExecutionService/msg/'+idMessageService+'/destiny=' + getEmailSend
+				}).success(function(data){
+					window.location.href = getUrlDir;
+				}).error(function(){
+					window.location.href = errorpage;
+				});
+			}else{
+				//console.log("Error: " + data.error.code + " " + data.error.message);
+				window.location.href = errorpage;
+			}
+		});
+	}
+});
+
+app.service('sendMailProccessBaston', function($http,httpServiceFormat){
+    delete $http.defaults.headers.common['X-Requested-With'];
+	
+	this.saySendEmail = function(nameFunction,dataGetter,pageSend,baseDir,getParams){
+		var responsecomando =
+		{
+			action: nameFunction,
+			element : dataGetter
+		};
+		
+		jQuery.post( baseDir, getParams, function(data){
+			if(data.success){
+				httpServiceFormat.post_content(responsecomando).then(function(response){
+					if(response.data.statusenvio){
+						window.location.href= pageSend;
+					}else{
+						window.location.href = errorpage;	
+					}
+				});
+			}
+		});
+		
+		
+		
+		
+	}
+});
+
+
+app.service("httpServiceFormat",  [ '$http',"$q", function($http,$q) {
+	var deferred = $q.defer();
+	var promise = deferred.promise;
+    var service = {           
+        get_content: function(href){
+            var request = $http({
+                method: "get",
+                url: href
+            });
+
+            return request;
+        },
+		post_content: function(data){
+			deferred.promise = $http({
+				method: "post",
+				url: MyAjax.url,
+				data: $.param(data),
+				//params: data,
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
+				}
+			}).success(function(res){
+				deferred.resolve(res);
+			}).error(function(msg,code){
+				deferred.reject(msg);
+			});
+
+			//console.log(promise);
+			return deferred.promise;
+		},
+		post_content_image: function(data){
+			deferred.promise = $http({
+				method: "post",
+				url: MyAjax.url,
+				data: data,
+				headers : {
+			        'Content-Type' : 'application/json'
+			    },
+			    transformRequest :  [function (data, headers) {
+			        return data;
+			    }],
+			}).success(function(res){
+				deferred.resolve(res);
+			}).error(function(msg,code){
+				deferred.reject(msg);
+			});
+
+			//console.log(promise);
+			return deferred.promise;
+		}
+    }
+    return service;
+
+}]);
+
+
+
+app.service('upload',["$http","$q", function($http,$q){
+	this.uploadFile = function(file){
+		var deferred = $q.defer();
+		var formData = new FormData();
+		formData.append("uploaddoc", file);	
+
+		
+		return $http.post(wpSiteOts +'/transactions/use_image.php', formData, {
+			headers: {
+				"Content-type" : undefined
+			},
+			transformRequest: formData
+		})
+		.success(function(res)
+		{
+			deferred.resolve(res);
+		})
+		.error(function(msg,code)
+		{
+			deferred.reject(msg);
+		})
+		return deferred.promise;
+	}
+}]);
+
+
+
+app.service('uploadImage',["$http","$q", function($http,$q){
+
+
+	this.uploadImage = function(infobase4){
+		var deferred = $q.defer();
+		var formData = new FormData();
+		formData.append("uploadimage", infobase4);	
+
+		
+		return $http.post(wpSiteOts +'/transactions/use_image.php', formData, {
+			headers: {
+				"Content-type" : undefined
+			},
+			transformRequest: formData
+		})
+		.success(function(res)
+		{
+			deferred.resolve(res);
+		})
+		.error(function(msg,code)
+		{
+			deferred.reject(msg);
+		})
+		return deferred.promise;
+	}
+}]);
+
+
+
+app.service('fileUploadService', ['$http', function ($http) {
+  this.uploadFileToUrl = function(base64, uploadUrl, params){
+    var fd = new FormData();
+    fd.append('get_imagen', base64);
+    promise = $http.post(uploadUrl, fd, {
+      transformRequest: angular.identity,
+      headers: {'Content-Type': undefined},
+      params: params
+    });
+
+    return promise;
+  }
+}]);
+
+
+app.service('sendDataFormAJ', function($http,httpServiceFormat,upload,fileUploadService){
+    delete $http.defaults.headers.common['X-Requested-With'];
+
+    this.saveDataBuildImageAction = function(dataGetter){
+    	var uploadUrl = wpSiteOts +'/transactions/save_image.php';
+    	fileUploadService.uploadFileToUrl(dataGetter, uploadUrl, {}).then(function(resp) {
+        // handle response
+        	console.log(resp);
+    	});
+	}
+
+
+	this.sendRequestForm = function(namefunction,dataGetter,promiseUrl,completeUrl,errorUrl,elemHtml,action){
+		var response =
+		{
+			action: namefunction,
+			element : dataGetter,
+			nonce : MyAjax.nonce
+		}; 
+		
+		httpServiceFormat.post_content(response).then(function(response)
+		{
+			if(response.data.result){
+				var addss = (response.data.last_id != undefined) ?"&lidin="+response.data.last_id : "";
+				var completado = "?"+completeUrl;
+				window.location.href = promiseUrl+completado+addss;
+			}else{
+				if(action){
+					muestraFalla(elemHtml,errorUrl);
+				}else{
+					window.location.href = errorUrl;
+				}
+				
+			}
+		});
+	}
+
+	
+	this.sendRequestFormNetSocial = function(namefunction,dataGetter,scope){
+		var response =
+		{
+			action: namefunction,
+			element : dataGetter,
+			nonce : MyAjax.nonce
+		}; 
+		httpServiceFormat.post_content(response).then(function(response){
+			if(response.data.result){
+				setTimeout(function(){
+					scope.linkShare = response.data.linkShare;
+					setTimeout(function(){
+						scope.publish(scope.linkShare);
+						setTimeout(function(){
+							scope.activeLogin = false;
+							scope.create_full_timeline = true;
+							scope.FBLogout();
+						},500);
+					},200);
+
+				},100);
+				
+			}
+		});
+		
+	}
+
+	this.sendInfoVideoAulaCuarenta = function(namefunction,dataGetter){
+		var response =
+		{
+			action: namefunction,
+			element : dataGetter,
+			nonce : MyAjax.nonce
+		};
+
+
+		httpServiceFormat.post_content(response).then(function(response){
+			if(response.data.result){
+				$("#modal-asistencia").modal('hide');
+				$(".btn-asistencia").hide();
+			}
+		});
+		
+	}
+
+
+
+	
+	this.sendRequestFormExtern = function(file,namefunction,dataGetter,modalThanks,modalError,action,secundario,buttonModal,resend,buttonModalError){
+		var response =
+		{
+			action: namefunction,
+			element : dataGetter,
+			nonce : MyAjax.nonce
+		}; 
+		httpServiceFormat.post_content(response).then(function(response){
+			//console.log(JSON.stringify(response));
+			if(response.data.existe && !response.data.result){
+				$("#"+modalError).modal('show');
+
+				$("#"+buttonModalError).on("click",function(){
+						$("#"+modalError).modal('hide');
+						$("#yesyesform").show();
+						$(".message").hide();
+
+					});
+				
+			}else if(response.data.result){
+				$("#"+modalThanks).modal('show');
+
+				if(resend){
+					$("#"+buttonModal).on("click",function(){
+						window.location = wpSiteOts;
+					});
+					
+				}
+				if(secundario){
+					upload.uploadFile(file).then(function(res){
+						//console.log(res.data);
+						if(res.data.result){
+							window.location = wpSiteOts;
+						}else{
+							$("#messageerror").html("ocurrio un error intenta mas tarde");
+							//console.log("negado");
+						}
+					});
+				}
+			}else{
+				$("#"+modalError).modal('show');
+			}
+			
+		});
+		
+	}
+
+
+	this.sendRequestDataControlLoginAgenciesExtern = function(namefunction,dataGetter,messageError,isLogout){
+		var response =
+		{
+			action: namefunction,
+			element : dataGetter,
+			nonce : MyAjax.nonce
+		}; 
+		httpServiceFormat.post_content(response).then(function(response){
+			if(response.data.result){
+				if(response.data.typedis){
+					window.location.href = wpSiteOts+"/panel-agencias";
+				}else{
+					window.location.href = wpSiteOts+"/panel-update";
+				}
+			}
+		});
+	}
+
+
+	this.sendRequestDataControlLoginExtern = function(namefunction,dataGetter,messageError,isLogout){
+		var response =
+		{
+			action: namefunction,
+			element : dataGetter,
+			nonce : MyAjax.nonce
+		}; 
+		httpServiceFormat.post_content(response).then(function(response){
+
+			console.log(response.data);
+			if(response.data.result){
+				if(isLogout){
+					window.location = wpSiteOts;
+				}else{
+					$("#changesessiontelephone").html('');
+					$("#changesessiontelephone").html(response.data.telephone);
+					$("#changesessiontelephoneadd").html('');
+					$("#changesessiontelephoneadd").html(response.data.telephoneadd);
+					$("#notchangesessiontelephone").removeClass("session-active");
+					$("#notchangesessiontelephone").hide();
+					$("#notchangesessiontelephonemty").removeClass("session-active");
+					$("#notchangesessiontelephonemty").hide();
+					$(".simiento").removeClass("session-active");
+					$(".notsimiento").removeClass("session-no-active");
+					$(".simiento").hide();
+					$(".notsimiento").show();
+					$(".info-a-ti").removeClass("session-no-active");
+					$(".info-a-ti").show();
+
+					$("#agencias_top").removeClass("session-no-active");
+					$("#agencias_top").removeClass("session-active");
+					$("#agencias_top").hide();
+
+					$("#lomioinfo").removeClass("session-no-active");
+					$("#lomioinfo").removeClass("session-active");
+					$("#lomioinfo").show();
+
+					
+					$(".open-flyers").removeClass("session-no-active");
+					$(".open-flyers").removeClass("session-active");
+					$(".open-flyers").show();
+					$(".close-flyers").hide();
+
+					//$("#logoident").removeAttr( "src" );
+					$("#logoident").attr( "src" ,wpSiteOts+"/"+response.data.logoagencia);
+					$("#backlogofooter").attr( "src" ,wpSiteOts+"/"+response.data.logoagencia);
+
+
+					$("#name_agency_or_legend").html("");
+					$("#name_agency_or_legend").html(response.data.nameagency);
+					$("#backface").hide();
+					$("#backinsta").hide();
+					$("#newsget").hide();
+					$("#sloganfooter").hide();
+					$('#modal-login').modal('hide');
+					location.reload();
+				}
+			}
+
+			
+		});
+		
+	}
+
+
+
+	this.sendGatherClicks = function(namefunction,dataGetter, urlHref, withPath){
+		var response =
+		{
+			action: namefunction,
+			element : dataGetter,
+			nonce : MyAjax.nonce
+		}; 
+		
+		httpServiceFormat.post_content(response).then(function(response)
+		{
+			if(response.data.result){
+				if(withPath){
+					window.open(wpSiteOts +"/"+ urlHref,"_blank");	
+				}else{
+					window.open(urlHref,"_blank");
+				}
+				
+			}
+
+		});
+	}
+
+	this.sendEmailForDocData = function(namefunction, dataGetter, nameModal) {
+        var response = {
+            action: namefunction,
+            element: dataGetter,
+            nonce: MyAjax.nonce
+        };
+
+        httpServiceFormat.post_content(response).then(function(response) {
+            console.log(response);
+            if (response.data.result) {
+
+				$('#'+nameModal).modal('hide'); 
+            }
+
+        });
+    }
+
+	this.sendRateByKey = function(namefunction,dataGetter,elementBuild,elementTwoBuild){
+		var response =
+		{
+			action: namefunction,
+			element : dataGetter,
+			nonce : MyAjax.nonce
+		}; 
+		
+		httpServiceFormat.post_content(response).then(function(response)
+		{
+			if($.isArray(response.data.rates)) {
+  				createItems(response.data.rates,elementBuild);
+			}else{
+				cleanItems(elementBuild);
+			}
+
+			if($.isArray(response.data.ratescomplement)) {
+  				createItems(response.data.ratescomplement,elementTwoBuild);
+			}else{
+				cleanItems(elementTwoBuild);
+			}
+
+		});
+	}
+
+	this.sendDataAllAgencyByState = function(namefunction,dataGetter,scope){
+		var sipi;
+		var response =
+		{
+			action: namefunction,
+			element : dataGetter,
+			nonce : MyAjax.nonce
+		};
+
+		httpServiceFormat.post_content(response).then(function(response)
+		{
+			if(response.data.result){
+				scope.recuperacion = response.data.elemento;
+			}
+		});
+	}
+
+
+	this.sendStateByKeyForTop = function(namefunction,dataGetter,scope){
+		var response =
+		{
+			action: namefunction,
+			element : dataGetter,
+			nonce : MyAjax.nonce
+		};
+		httpServiceFormat.post_content(response).then(function(response){
+			scope.helpDataTop = response.data.elemento;
+		});
+	}
+
+
+	this.sendStateByKey = function(namefunction,dataGetter,scope){
+		var response =
+		{
+			action: namefunction,
+			element : dataGetter,
+			nonce : MyAjax.nonce
+		}; 
+		
+		httpServiceFormat.post_content(response).then(function(response)
+		{
+			marker = [];
+			viewInfo = (response.data.result) ? response.data.elemento : false;
+			LocationCenter = new google.maps.LatLng(viewInfo[0].latitud, viewInfo[0].longitud);
+ 			var myOptions = {
+ 				zoom: 12,
+ 				center: LocationCenter,
+ 				mapTypeId: google.maps.MapTypeId.ROADMAP
+ 			}
+ 			map = new google.maps.Map(document.getElementById("map"), myOptions);
+ 			infowindow = new google.maps.InfoWindow();
+
+ 			var xx = 0;
+ 			var stam;
+ 			var serio= 1;
+
+ 			for (var key in viewInfo) {
+ 				let value = viewInfo[key];
+
+ 				if(xx < 2){
+ 					stam = iconBase + "ico-laagencia.png";
+ 				}else{
+ 					stam = iconBase + "ico-laagencia.png";
+ 				}
+
+
+
+ 				marker = new google.maps.Marker({ 
+ 					position: new google.maps.LatLng(value.latitud, value.longitud), 
+ 					map: map, 
+ 					icon: stam,
+ 				});
+ 				google.maps.event.addListener(marker, 'click', (function(marker, i) { 
+ 					return function() { 
+
+ 						cadena = '<div class="tooltip-info"><h1>'+value.nameagency+'</h1>';
+ 						cadena += '<div><i class="fa fa-map-marker" aria-hidden="true"></i><p class="vis-block">'+value.addresscontact+'</p></div>';
+ 						cadena += (value.telephone != "") ? '<div><i class="fa fa-phone" aria-hidden="true"></i><p class="vis-block">'+value.telephone+'</p></div>' : '';
+ 						cadena += '</div>';
+ 						infowindow.setContent(cadena); 
+ 						infowindow.open(map, marker); 
+
+
+
+ 						$("#get_ref_logo").attr("src", "");
+ 						$("#get_ref_logo").attr("src", "/"+value.logoagencia);
+
+ 						$("#get_ref_title").html(value.nameagency);
+ 						$("#get_ref_direccion").html((value.addresscontact != undefined && value.addresscontact != "") ? '<i class="fa fa-map-marker" aria-hidden="true"></i>' + value.addresscontact : '');
+ 						$("#get_ref_telefono").html((value.telephone != undefined && value.telephone != "") ? '<i class="fa fa-phone" aria-hidden="true"></i>' + value.telephone : '');
+ 						$("#get_ref_email").html((value.emailcontact != undefined && value.emailcontact != "") ? '<i class="fa fa-envelope" aria-hidden="true"></i>' + value.emailcontact : '');
+
+ 						$(".info-agencia").show();
+ 					} 
+ 				})(marker, serio));
+ 				xx++;
+ 				serio++;
+
+ 				
+ 			}
+
+		});
+	}
+
+
+
+	
+	this.sendCitiesByCountryKey = function(namefunction,dataGetter,elementBuild){
+		var response =
+		{
+			action: namefunction,
+			element : dataGetter,
+			nonce : MyAjax.nonce
+		}; 
+		
+		httpServiceFormat.post_content(response).then(function(response)
+		{
+			if(response.data != 0){
+				createItems(response.data,elementBuild);
+			}else{
+				createItems(viewCallCenter(),elementBuild);
+			}	
+		});
+	}
+        
+    this.sendSucursalSlug = function(namefunction,dataGetter){
+
+                var response =
+		{
+			action: namefunction,
+			element : dataGetter,
+			nonce : MyAjax.nonce
+		}; 
+
+                httpServiceFormat.post_content(response).then(function(response)
+		{
+			if(response.data != 0){
+				createSucursalSug(response.data);
+			}else{
+				deleteItemsSucursal();
+			}
+                    
+			
+		});
+	}
+	
+	this.sendCountriesByContinentKey = function(namefunction,dataGetter,elementBuild){
+		var response =
+		{
+			action: namefunction,
+			element : dataGetter,
+			nonce : MyAjax.nonce
+		}; 
+		
+		httpServiceFormat.post_content(response).then(function(response)
+		{
+			if(response.data != 0){
+				createItemsCountries(response.data,elementBuild);
+			}else{
+				deleteItems(elementBuild);
+			}
+			
+		});
+	}
+});
+
+
+
+app.directive('onKeyup', function() {
+  return function(scope, elm, attrs) {
+    elm.bind("keyup", function() {
+      scope.$apply(attrs.onKeyup);
+    });
+  };
+});
+
+
+app.directive('ignoreCompositionEvent', function () {
+    return {
+        restrict: 'A',
+        link: function postLink(scope, element) {
+            //element.val('this is the ignoreCompositionEvent directive');
+            element.off('compositionstart').off('compositionend');
+        }
+    };
+}); 
+
+app.directive("updateModelOnEnterKeyPressed", function() {
+	return {
+		restrict: 'A',
+		require: 'ngModel',
+		link: function (scope, elem, attrs, ngModelCtrl) {
+			elem.bind("keyup",function(e) {
+				if (e.keyCode === 13) {
+					ngModelCtrl.$commitViewValue();
+					//console.log(ngModelCtrl.$commitViewValue());
+				}
+			});
+		}
+	}
+});
+
+
+app.directive('sameAs', [function () {
+    return {
+      require: 'ngModel',
+      link: function (scope, elem, attrs, ctrl) {
+        var firstPassword = '#' + attrs.sameAs;
+        elem.add(firstPassword).on('keyup', function () {
+          scope.$apply(function () {
+            var v = elem.val()===$(firstPassword).val();
+            ctrl.$setValidity('emailmatch', v);
+          });
+        });
+      }
+    }
+  }]);
+  
+app.directive('ngUpdateHidden', function () {
+    return {
+        restrict: 'AE', //attribute or element
+        scope: {},
+        replace: true,
+        require: 'ngModel',
+        link: function ($scope, elem, attr, ngModel) {
+            $scope.$watch(ngModel, function (nv) {
+                elem.val(nv);
+            });
+            elem.change(function () { //bind the change event to hidden input
+                $scope.$apply(function () {
+                    ngModel.$setViewValue(  elem.val());
+                });
+            });
+        }
+    };
+})  
+  
+app.directive('jqdatepickerBirthday', function () {
+    return {
+        restrict: 'A',
+        require: 'ngModel',
+        link: function($scope, element, attrs, ctrl) {
+            $(element).datepicker({
+                dateFormat: 'yy-mm-dd',
+				changeMonth: true,
+				changeYear: true,
+				yearRange: "-100:-10",
+				reverseYearRange: true,
+				defaultDate: '-10y',
+                onSelect: function(date) {
+                    ctrl.$setViewValue(date);
+                    ctrl.$render();
+                    $scope.$apply();
+                }
+            });
+        }
+    };
+});
+
+
+app.directive('jqdatepickerExit', function () {
+    return {
+        restrict: 'A',
+        require: 'ngModel',
+        link: function($scope, element, attrs, ctrl) {
+            $(element).datepicker({
+                dateFormat: 'yy-mm-dd',
+				changeMonth: true,
+				changeYear: true,
+				defaultDate: 'today',
+				minDate: 'today',
+                onSelect: function(date) {
+                    ctrl.$setViewValue(date);
+                    ctrl.$render();
+                    $scope.$apply();
+                }
+            });
+        }
+    };
+});
+
+app.directive('jqdatepickerSpecialday', function () {
+    return {
+        restrict: 'A',
+        require: 'ngModel',
+        link: function($scope, element, attrs, ctrl) {
+			var dateToday = new Date();
+            $(element).datepicker({
+                dateFormat: 'yy-mm-dd',
+				changeMonth: true,
+				changeYear: true,
+				minDate: dateToday,
+                onSelect: function(date) {
+                    ctrl.$setViewValue(date);
+                    ctrl.$render();
+                    $scope.$apply();
+                }
+            });
+        }
+    };
+});
+
+app.directive('wcUnique', ['$captcha', function ($captcha) {
+    return {
+        restrict: 'A',
+        require: 'ngModel',
+        link: function (scope, element, attrs, formCtrl) {
+            element.bind('blur', function (e) {
+                if (!formCtrl || !element.val()) return;
+				var currentValue = element.val();
+				
+				if($captcha.checkResult(currentValue) == true){
+					element.removeClass('error');
+					element.addClass('success');
+					scope.isDisabled = false;
+				}else{
+					$captcha.getOperation();
+					element.removeClass('success');
+					element.addClass('error');
+					//$("#yesyes").attr("disabled",true);
+					scope.isDisabled = true;
+				}
+            });
+        }
+    }
+}]);
+
+app.directive('onlyNum', function() {
+      return function(scope, element, attrs) {
+         var keyCode = [8,9,37,39,48,49,50,51,52,53,54,55,56,57,96,97,98,99,100,101,102,103,104,105,110];
+          element.bind("keydown", function(event) {
+            //console.log($.inArray(event.which,keyCode));
+            if($.inArray(event.which,keyCode) == -1) {
+                scope.$apply(function(){
+                    scope.$eval(attrs.onlyNum);
+                    event.preventDefault();
+                });
+                event.preventDefault();
+            }
+
+        });
+     };
+  });
+
+
+app.factory("genericServices", function() {
+	return {
+		relationMonth: function() {
+			var month = [
+			    { monthsel : "Enero", itemmont : "01" },
+			    { monthsel : "Febrero", itemmont : "02" },
+			    { monthsel : "Marzo", itemmont : "03" },
+			    { monthsel : "Abril", itemmont : "04" },
+			    { monthsel : "Mayo", itemmont : "05" },
+			    { monthsel : "Junio", itemmont : "06" },
+			    { monthsel : "Julio" , itemmont : "07"},
+			    { monthsel : "Agosto", itemmont : "08" },
+			    { monthsel : "Septiembre", itemmont : "09" },
+			    { monthsel : "Octubre", itemmont : "10" },
+			    { monthsel : "Noviembre", itemmont : "11" },
+			    { monthsel : "Diciembre", itemmont : "12" }
+		  	] ;
+			return month;
+		},
+		relationProducts: function(){
+			var relationProd = [
+		    {
+		    	id : 1,
+		    	name : "Vuelos",
+		    	value : "vuelos"
+		    },
+		    {
+		    	id : 2,
+		    	name : "Trenes",
+		    	value : "trenes"
+		    },
+		    {
+		    	id : 3,
+		    	name : "Autos",
+		    	value : "autos"
+		    },
+		    {
+		    	id : 4,
+		    	name : "Seguros",
+		    	value : "seguros"
+		    },
+		    {
+		    	id : 5,
+		    	name : "Viajes",
+		    	value : "viajes"
+		    },
+		    {
+		    	id : 6,
+		    	name : "Paquetes Nacionales",
+		    	value : "paquetes"
+		    },
+		    {
+		    	id : 7,
+		    	name : "Hospedaje",
+		    	value : "hospedaje"
+		    }
+			
+
+		    ];
+
+		    return relationProd;
+		},
+		agreeProducts: function(){
+			var agreeProd = [
+		    {
+		    	id : 1,
+		    	name : "Agregar un Hotel",
+		    	value : "vuelos"
+		    },
+		    {
+		    	id : 2,
+		    	name : "Agregar un Auto",
+		    	value : "seguro"
+		    }
+
+		    ];
+
+		    return agreeProd;
+		},
+		relationProductsGeneric: function(){
+			var relationProdGen = [
+		    {
+		    	id : 1,
+		    	name : "Vuelos",
+		    	value : "vuelos"
+		    },
+		    {
+		    	id : 2,
+		    	name : "Trenes",
+		    	value : "trenes"
+		    },
+		    {
+		    	id : 3,
+		    	name : "Seguros de viaje",
+		    	value : "seguros"
+		    },
+		    {
+		    	id : 4,
+		    	name : "ISIC",
+		    	value : "isic"
+		    },
+		    {
+		    	id : 5,
+		    	name : "Guia de destino",
+		    	value : "guia"
+		    }
+		    ];
+
+		    return relationProdGen;
+		},
+		testingCities: function(){
+			var testCity = [
+		    {
+		    	id : 1,
+		    	name : "New York",
+				slug : "new_york"
+		    },
+		    {
+		    	id : 2,
+		    	name : "Montreal",
+				slug : "montreal"
+		    },
+		    {
+		    	id : 3,
+		    	name : "Distrito Federal",
+				slug : "distrito_federal"
+		    },
+		    {
+		    	id : 4,
+		    	name : "Buenos Aires",
+				slug : "buenos_aires"
+		    },
+		    {
+		    	id : 5,
+		    	name : "Rio de Janeiro",
+				slug : "rio_de_janeiro"
+		    },
+		    {
+		    	id : 6,
+		    	name : "Cordoba",
+				slug : "cordoba"
+		    },
+		    {
+		    	id : 7,
+		    	name : "Sao paulo",
+				slug : "sao-paulo"
+		    }
+
+		    ];
+
+		    return testCity;
+		},
+		testingCategories: function(){
+			var testCategory = [
+		    {
+		    	id : 1,
+		    	name : "Yolo",
+				slug : "yolo"
+		    },
+			{
+		    	id : 2,
+		    	name : "Gypsets",
+				slug : "gypsets"
+		    }
+		    
+
+		    ];
+
+		    return testCategory;
+		},
+		modeOrder: function(){
+			var modeOrd = [
+		    {
+		    	id : 1,
+		    	name : "Precio Mayor"
+		    },
+			{
+		    	id : 2,
+		    	name : "Precio Menor"
+		    },
+			{
+		    	id : 3,
+		    	name : "Dias Mayor"
+		    },
+			{
+		    	id : 4,
+		    	name : "Dias Menor"
+		    },
+			{
+		    	id : 5,
+		    	name : "Nombre A-Z"
+		    },
+			{
+		    	id : 6,
+		    	name : "Nombre Z-A"
+		    }
+		    
+
+		    ];
+
+		    return modeOrd;
+		},
+		periodDuration: function(){
+			var modeOrd = [
+		    {
+		    	id : '1,5',
+		    	name : "1 - 5 Dias"
+		    },
+			{
+		    	id : '6,10',
+		    	name : "6 - 10 Dias"
+		    },
+			{
+		    	id : '11,15',
+		    	name : "11 - 15 Dias"
+		    },
+			{
+		    	id : '16,20',
+		    	name : "16 - 20 Dias"
+		    },
+			{
+		    	id : '21',
+		    	name : "Más de 21 Dias"
+		    }
+
+		    ];
+
+		    return modeOrd;
+		}
+	}
+});
+
+
+
+
+/* functions jquery and javascript */
+
+
+var acentos = (function() {
+  var from = "ÃÀÁÄÂÈÉËÊÌÍÏÎÒÓÖÔÙÚÜÛãàáäâèéëêìíïîòóöôùúüûÑñÇç", 
+      to   = "AAAAAEEEEIIIIOOOOUUUUaaaaaeeeeiiiioooouuuunncc",
+      mapping = {};
+ 
+  for(var i = 0, j = from.length; i < j; i++ )
+      mapping[ from.charAt( i ) ] = to.charAt( i );
+ 
+  return function( str ) {
+      var ret = [];
+      for( var i = 0, j = str.length; i < j; i++ ) {
+          var c = str.charAt( i );
+          if( mapping.hasOwnProperty( str.charAt( i ) ) )
+              ret.push( mapping[ c ] );
+          else
+              ret.push( c );
+      }      
+      return ret.join( '' );
+  }
+ 
+})();
+
+function createItems(getArray,getElement){
+	$('#'+getElement +' option[value!=""]').remove();
+	$.each(getArray,function(i,elem){
+		$('#'+getElement).append("<option value='"+elem.name+"'>"+elem.name+"</option>");
+	});	
+}
+
+function cleanItems(getElement){
+	$('#'+getElement +' option[value!=""]').remove();
+}
+
+function createSucursalSug(getArray){
+    $('#sucursal-telefono').val(getArray.telefono);
+    $('#sucursal-nombre').val(getArray.nombre);
+}
+
+function createItemsCountries(getArray,getElement){
+	//$('#'+getElement +' option[value!=""]').remove();
+	$('#'+getElement).empty();
+	$('#'+getElement).multiselect({
+		nonSelectedText: 'Elige los países',
+		maxHeight: 200,				
+		onDropdownShown: function(e) {
+			 adjustByScrollHeight();
+		},
+		onDropdownHidden: function(e) {
+			adjustByHeight();
+		}
+	});
+	$(".multiselect").addClass("ajusteselect");		
+	setTimeout(function(){
+		$(".caret").addClass("derechitoforce");			
+	},100);
+	
+	
+	$(".multiselect-container").addClass("ajusteselect2");		
+	
+	$('#'+getElement).attr("multiple", (this.checked) ? "multiple" : "");
+	for(i=0; i < getArray.length; i++){
+		$('#'+getElement).append("<option value='"+getArray[i].id+"'>"+getArray[i].paisnombre+"</option>").multiselect('rebuild');					
+	}	
+	
+}
+
+function inArray(needle, haystack) {
+    var length = haystack.length;
+    for(var i = 0; i < length; i++) {
+        if(typeof haystack[i] == 'object') {
+            if(arrayCompare(haystack[i], needle)) return true;
+        } else {
+            if(haystack[i] == needle) return true;
+        }
+    }
+    return false;
+}
+
+// You don't need to care about these methods
+function adjustByHeight() {
+	var $body   = $('body'),
+		$iframe = $body.data('iframe.fv');
+	if ($iframe) {
+		// Adjust the height of iframe when hiding the picker
+		$iframe.height($body.height());
+	}
+}
+
+function adjustByScrollHeight() {
+	var $body   = $('body'),
+		$iframe = $body.data('iframe.fv');
+	if ($iframe) {
+		// Adjust the height of iframe when showing the picker
+		$iframe.height($body.get(0).scrollHeight);
+	}
+}
+
+function deleteItemsSucursal(){
+	$('#sucursal-telefono').val('');
+        $('#sucursal-nombre').val('');
+}
+
+function deleteItems(getElement){
+	$('#'+getElement +' option[value!=""]').remove();
+}
+
+function muestraFalla(id,text){
+	$('#'+id).fadeIn('fast', function() {
+		$('#'+id).html(text);	
+		setTimeout(function() {  
+		$('#'+id).fadeOut('slow')		
+		$('#'+id).html('');
+		},2000);
+	});
+}
+
+
+function viewCallCenter(){
+	var myObj = [
+	 		    { nombre: "Call Center" } 
+	 		];
+	return myObj;
+}
+
+
+
+function muestraFalloMotor(elementoModal,tituloModal,cuerpoModal){
+	$(".addtitle").html(tituloModal);
+	$(".addbody").html(cuerpoModal);
+	$("#"+elementoModal).modal('show');
+}
+
+
+function objectToArray(obj){
+	x=[]
+	$.each(obj, function(i,n) {
+		x.push(n);
+	});	
+	return x;
+}
+
+
+
+function aspirina(tara){
+	return tara;
+} 
